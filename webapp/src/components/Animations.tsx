@@ -74,6 +74,10 @@ const Animations = () => {
                 <AnimationWrapper onClick={() => runAnimation("wipe")} background="https://art.pixilart.com/b631903b2d6208c.gif">
                     <span className="title">Wipe</span>
                 </AnimationWrapper>
+
+                <AnimationWrapper onClick={() => runAnimation("off")} color="#000000">
+                    <span className="title">Off</span>
+                </AnimationWrapper>
             </AnimationsWrapper>
         </Card>
     )

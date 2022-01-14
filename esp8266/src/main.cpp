@@ -6,6 +6,7 @@
 #include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
 #include <Adafruit_NeoPixel.h>
+#include <ESPAsyncWebServer.h>
 #ifdef __AVR__
 #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
 #endif
@@ -15,6 +16,7 @@
 #include "./animations/wipe.hpp"
 #include "./animations/theater_chase.hpp"
 #include "./animations/random_color_twinkle.hpp"
+#include "./animations/off.hpp"
 int NUM_LEDS = 900;
 
 const char *ssid = "Freebox-ACD532";
@@ -153,6 +155,10 @@ void setAnimation()
         if (animation == "wipe")
         {
           colorWipe(0x00ff00, 1, &pixels, NUM_LEDS);
+        }
+        if (animation == "off")
+        {
+          off(&pixels, NUM_LEDS);
         }
         pixels.clear();
       }

@@ -18,4 +18,5 @@ body {
 
 .fullscreen.fullscreen-enabled {
     background-color: white;
+    overflow: auto;
 }
