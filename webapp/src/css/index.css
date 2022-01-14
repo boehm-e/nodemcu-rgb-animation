@@ -1,0 +1,21 @@
+html,
+body {
+    background: #f3f3f3;
+}
+
+.react-colorful {
+    width: auto !important;
+    height: 30vh !important;
+    /* padding: 1rem; */
+}
+
+.react-colorful__alpha,
+.react-colorful__hue {
+    border-radius: 12px !important;
+    margin-top: 1rem !important;
+    height: 10px !important;
+}
+
+.fullscreen.fullscreen-enabled {
+    background-color: white;
+}
