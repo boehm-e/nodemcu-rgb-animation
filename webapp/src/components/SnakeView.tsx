@@ -163,7 +163,7 @@ const SnakeView = () => {
         const newData = data.map((part) => part.selected ? { ...part, color } : part)
         setData(newData)
         const colors = newData.map(part => Color(part.color).rgbNumber());
-        axios.post('http://192.168.1.136/setColors', JSON.stringify(Array(56 / 2).fill(colors).flat()));
+        axios.post('http://192.168.1.136/setColors', JSON.stringify(colors));
 
         console.log("NEW DATA", colors)
     }, [color])
