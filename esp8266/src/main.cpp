@@ -271,7 +271,7 @@ public:
                         setPixelColor(MusicIndexes[i] - j, DimColorShift(0x9d00ff, 2));
                     else if (MusicVolumes[i] == 9)
                         setPixelColor(MusicIndexes[i] - j, DimColorShift(0xff00b6, 1));
-                    else if (MusicVolumes[i] == 10)
+                    else if (MusicVolumes[i] >= 10)
                         setPixelColor(MusicIndexes[i] - j, 0xffffff);
                 }
             }
@@ -582,7 +582,8 @@ void setMusic()
 
                 Serial.println(F("done."));
                 int volume = postObj["volume"];
-                Stick.Music(40, volume);
+                Serial.print("MUSIQUE : "); Serial.println(volume);
+                Stick.Music(20, volume);
             }
 
             DynamicJsonDocument response(512);

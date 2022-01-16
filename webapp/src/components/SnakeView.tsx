@@ -9,6 +9,7 @@ import Color from 'color';
 import axios from 'axios';
 import { Card, SubTitle } from './Elements';
 import useLocalStorage from "use-local-storage";
+import { getUrl } from '../reducers/settings-reducer';
 
 const SnakeWrapper = styled.div`
     /* display: flex; */
@@ -193,10 +194,13 @@ const SnakeView = () => {
 
     const [color, setColor] = useState("#aabbcc");
     const [colorProfiles, setColorProfiles] = useLocalStorage<string>("colorProfiles", "[]");
+    const url = useSelector(getUrl);
+
+    console.log("URLLLL snakeview", url)
 
     const updateRibbon = (newData: any) => {
         const colors = newData.map((part: any) => Color(part.color).rgbNumber());
-        axios.post('http://192.168.1.136/setColors', JSON.stringify(colors));
+        axios.post(`${url}/setColors`, JSON.stringify(colors));
     }
     useEffect(() => {
         const newData = data.map((part) => part.selected ? { ...part, color } : part)

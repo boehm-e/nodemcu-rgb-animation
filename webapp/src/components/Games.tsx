@@ -4,19 +4,22 @@ import { HexColorPicker, RgbaStringColorPicker } from "react-colorful";
 import { AnimationsWrapper, AnimationWrapper, Card, SubTitle } from './Elements';
 import styled from 'styled-components';
 import Color from 'color';
+import { getUrl } from '../reducers/settings-reducer';
+import { useSelector } from 'react-redux';
 
 const Games = () => {
     const [color1, setColor1] = useState("#ff0000");
     const [color2, setColor2] = useState("#0000ff");
+    const url = useSelector(getUrl);
 
     const runGame = (name: string) => {
-        axios.post('http://192.168.1.136/setAnimation', JSON.stringify({
+        axios.post(`${url}/setAnimation`, JSON.stringify({
             "name": name,
         }));
     }
 
     const setGameColors = () => {
-        axios.post('http://192.168.1.136/setAnimationColors', JSON.stringify({
+        axios.post(`${url}/setAnimationColors`, JSON.stringify({
             "color1": Color(color1).rgbNumber(),
             "color2": Color(color2).rgbNumber(),
         }));

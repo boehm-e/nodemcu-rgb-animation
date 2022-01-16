@@ -1,6 +1,10 @@
 import axios from 'axios';
 import Color from 'color';
+import Switch from "react-switch";
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Card, SubTitle } from './Elements';
+import { useSelector } from 'react-redux';
+import { getUrl } from '../reducers/settings-reducer';
 
 const mapValue = function (curr: number, in_min: number, in_max: number, out_min: number, out_max: number) {
     return (curr - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
@@ -11,18 +15,24 @@ var lastVal = -1;
 const AudioVis = () => {
     const [audio, setAudio] = useState<any>(null);
 
+    const [_volume, setVolume] = useState<any>(-1);
+    const [_volumem, setVolumem] = useState<any>(-1);
+
+    const url = useSelector(getUrl);
 
     const updateRibbon = (volume: any) => {
-        axios.post('http://192.168.1.136/setMusic', JSON.stringify({ volume }));
+        axios.post(`${url}/setMusic`, JSON.stringify({ volume }));
+        // setVolume(volume);
     }
 
 
     const getMicrophone = async () => {
         navigator.mediaDevices.getUserMedia({
             audio: true,
-            video: true
+            video: false
         })
             .then(function (stream) {
+                setAudio(stream);
                 const audioContext = new AudioContext();
                 const analyser = audioContext.createAnalyser();
                 const microphone = audioContext.createMediaStreamSource(stream);
@@ -40,7 +50,9 @@ const AudioVis = () => {
                     const arraySum = array.reduce((a, value) => a + value, 0);
                     const average = arraySum / array.length;
                     const volume = Math.round(average);
-                    const mappedvolume = Math.floor(mapValue(volume, 0, 100, -2, 10));
+                    const mappedvolume = Math.floor(mapValue(volume, 0, 40, -1, 10));
+                    setVolume(volume);
+                    setVolumem(mappedvolume);
                     if (mappedvolume != lastVal && mappedvolume > 0) {
                         lastVal = mappedvolume;
                         // console.log("UPDATE RIBBON")
@@ -60,24 +72,20 @@ const AudioVis = () => {
         setAudio(null);
     }
 
-    const toggleMicrophone = () => {
-        if (audio) {
-            stopMicrophone();
-        } else {
-            getMicrophone();
-        }
-    }
-
-
 
     return (
-        <div className="App">
-            <div className="controls">
-                <button onClick={toggleMicrophone}>
-                    {audio ? 'Stop microphone' : 'Get microphone input'}
-                </button>
-            </div>
-        </div>
+        <Card>
+            <SubTitle style={{ display: 'flex', justifyContent: 'space-between', margin: '0' }}>
+                Musique 
+                {/* <br />
+                {_volume}
+                <br />
+                {_volumem} */}
+                <Switch onChange={() => { !audio ? getMicrophone() : stopMicrophone() }} checked={!!audio} />
+            </SubTitle>
+
+            {/* {audio ? 'Stop microphone' : 'Get microphone input'} */}
+        </Card>
     );
 }
 

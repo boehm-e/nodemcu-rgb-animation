@@ -1,6 +1,7 @@
 const defaultSettings = {
   darkMode: false,
-  readingHelpActive: true
+  readingHelpActive: true,
+  url: localStorage.getItem("url")
 }
 
 
