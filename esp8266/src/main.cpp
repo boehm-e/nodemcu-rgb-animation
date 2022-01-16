@@ -13,7 +13,7 @@
 
 #define PIN D3
 
-int NUM_LEDS = 250;
+int NUM_LEDS = 900;
 
 const char *ssid = "Freebox-ACD532";
 const char *password = "labebantur9#-sardinia*-appie?4-supponatis";
@@ -200,6 +200,7 @@ public:
             }
         }
         show();
+        // Increment();
         Increment();
     }
 
@@ -732,7 +733,7 @@ void setAnimation()
                 else if (animation == "scanner")
                 {
                     Serial.println("scanner");
-                    Stick.Scanner(Stick.Color1, 10);
+                    Stick.Scanner(Stick.Color1, 0);
                 }
                 else if (animation == "game")
                 {
@@ -742,7 +743,7 @@ void setAnimation()
                 else if (animation == "twinkle")
                 {
                     Serial.println("twinkle");
-                    Stick.Twinkle(Stick.Color1, 150);
+                    Stick.Twinkle(Stick.Color1, 50);
                 }
                 else if (animation == "reverse")
                 {
