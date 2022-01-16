@@ -5,6 +5,7 @@
   "dependencies": {
     "@craco/craco": "^6.2.0",
     "@typescript-eslint/parser": "^4.31.1",
+    "audica": "^0.2.2",
     "axios": "^0.24.0",
     "babel-eslint": "^10.1.0",
     "color": "^4.2.0",

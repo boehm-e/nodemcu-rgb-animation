@@ -12,6 +12,7 @@ import Debug from './Debug';
 import Animations from './Animations';
 import Games from './Games';
 import { Title } from './Elements';
+import AudioVis from './AudioVis';
 
 
 const FullScreenButton = styled.button`
@@ -30,6 +31,7 @@ const Home = () => {
         <>
             <Title>Chambre d'Éline</Title>
             <FullScreen handle={handle}>
+                <AudioVis />
                 <SnakeView />
                 <Debug />
                 <Animations />
