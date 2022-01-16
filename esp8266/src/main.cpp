@@ -13,7 +13,7 @@
 
 #define PIN D3
 
-int NUM_LEDS = 900;
+int NUM_LEDS = 250;
 
 const char *ssid = "Freebox-ACD532";
 const char *password = "labebantur9#-sardinia*-appie?4-supponatis";
@@ -27,6 +27,7 @@ enum pattern
   THEATER_CHASE,
   COLOR_WIPE,
   SCANNER,
+  GAME,
   FADE,
   TWINKLE,
   DO_NOTHING
@@ -51,6 +52,10 @@ public:
   uint32_t Color1, Color2; // What colors are in use
   uint16_t TotalSteps;     // total number of steps in the pattern
   uint16_t Index;          // current step within the pattern
+
+  // GAME
+  int GamePos;
+  int GameLevel;
 
   void (*OnComplete)(); // Callback on completion of pattern
 
@@ -80,6 +85,9 @@ public:
         break;
       case SCANNER:
         ScannerUpdate();
+        break;
+      case GAME:
+        GameUpdate();
         break;
       case FADE:
         FadeUpdate();
@@ -275,6 +283,80 @@ public:
     Increment();
   }
 
+  // Initialize for a SCANNNER
+  void Game(uint8_t interval)
+  {
+    if (ActivePattern == GAME)
+    {
+      // make game harder
+      Interval = Interval - 2;
+      if (Interval < 0)
+        Interval = 20;
+      int dst = abs((Index % NUM_LEDS) - GamePos);
+      int distance = min(NUM_LEDS - dst, dst);
+      // win
+      if (distance <= 6)
+      {
+        ColorSet(0x00ff00);
+        show();
+        delay(500);
+      }
+      // lose
+      else
+      {
+        ColorSet(0xff0000);
+        show();
+        delay(500);
+      }
+    }
+    else
+    {
+      Interval = interval;
+      ActivePattern = GAME;
+      TotalSteps = (NUM_LEDS - 1);
+    }
+    Index = random(NUM_LEDS);
+    GamePos = random(NUM_LEDS);
+  }
+
+  // Update the Game Pattern
+  void GameUpdate()
+  {
+
+    for (int i = 0; i < NUM_LEDS; i++)
+    {
+      if (i == Index) // Scan Pixel to the right
+      {
+        setPixelColor(i, Color1);
+      }
+      // else if (i == TotalSteps - Index) // Scan Pixel to the left
+      // {
+      //   setPixelColor(i, Color1);
+      // }
+      else // Fading tail
+      {
+        setPixelColor(i, DimColor(getPixelColor(i)));
+      }
+    }
+    // show target
+    for (int i = GamePos - 3; i < GamePos + 3; i++)
+    {
+      setPixelColor(i % NUM_LEDS, Color2);
+    }
+
+    int distance = abs((Index) - GamePos);
+    Serial.print("DISTANCE : ");
+    Serial.println(distance);
+    Serial.print("GAMEPOS  : ");
+    Serial.println(GamePos);
+    Serial.print("Index    : ");
+    Serial.println(Index);
+    Serial.println("========================");
+
+    show();
+    Increment();
+  }
+
   // Initialize for a Fade
   void Fade(uint32_t color1, uint32_t color2, uint16_t steps, uint8_t interval, direction dir = FORWARD)
   {
@@ -369,11 +451,25 @@ void StickComplete();
 
 NeoPatterns Stick(NUM_LEDS, D3, NEO_GRB + NEO_KHZ800, &StickComplete);
 
+void sendCrossOriginHeader()
+{
+  server.send(204);
+}
+
+void setCrossOrigin()
+{
+  server.sendHeader(F("Access-Control-Allow-Origin"), F("*"));
+  server.sendHeader(F("Access-Control-Max-Age"), F("600"));
+  server.sendHeader(F("Access-Control-Allow-Methods"), F("PUT,POST,GET,OPTIONS"));
+  server.sendHeader(F("Access-Control-Allow-Headers"), F("*"));
+};
+
 void setColors()
 {
+  setCrossOrigin();
   String colorsStr = server.arg("plain");
 
-  DynamicJsonDocument doc(1024 * 20);
+  DynamicJsonDocument doc(1024 * 2);
   DeserializationError error = deserializeJson(doc, colorsStr);
   if (error)
   {
@@ -421,6 +517,7 @@ void setColors()
 
 void setColor()
 {
+  setCrossOrigin();
   String colorsStr = server.arg("plain");
 
   DynamicJsonDocument doc(128);
@@ -462,6 +559,7 @@ void setColor()
 
 void setAnimation()
 {
+  setCrossOrigin();
   String colorsStr = server.arg("plain");
 
   DynamicJsonDocument doc(512);
@@ -481,6 +579,13 @@ void setAnimation()
 
     if (server.method() == HTTP_POST)
     {
+      if (postObj.containsKey("color1") && postObj.containsKey("color2"))
+      {
+        Serial.println("SET COLOR");
+        Stick.Color1 = postObj["color1"];
+        Stick.Color2 = postObj["color2"];
+      }
+
       if (postObj.containsKey("name"))
       {
         Serial.println("SET ANIMATION");
@@ -496,6 +601,11 @@ void setAnimation()
         {
           Serial.println("scanner");
           Stick.Scanner(Stick.Color1, 10);
+        }
+        else if (animation == "game")
+        {
+          Serial.println("game");
+          Stick.Game(50);
         }
         else if (animation == "twinkle")
         {
@@ -541,6 +651,7 @@ void setAnimation()
 
 void setAnimationColors()
 {
+  setCrossOrigin();
   String colorsStr = server.arg("plain");
 
   DynamicJsonDocument doc(512);
@@ -585,9 +696,13 @@ void restServerRouting()
                           F("Welcome to the REST Web Server")); });
   // handle post request
   server.on(F("/setColors"), HTTP_POST, setColors);
+  server.on(F("/setColors"), HTTP_OPTIONS, sendCrossOriginHeader);
   server.on(F("/setColor"), HTTP_POST, setColor);
+  server.on(F("/setColor"), HTTP_OPTIONS, sendCrossOriginHeader);
   server.on(F("/setAnimation"), HTTP_POST, setAnimation);
+  server.on(F("/setAnimation"), HTTP_OPTIONS, sendCrossOriginHeader);
   server.on(F("/setAnimationColors"), HTTP_POST, setAnimationColors);
+  server.on(F("/setAnimationColors"), HTTP_OPTIONS, sendCrossOriginHeader);
 }
 
 // Manage not found URL
@@ -638,7 +753,7 @@ void setup()
 
   // stick
   Stick.begin();
-  Stick.Scanner(Stick.Color(255, 0, 255), 55);
+  // Stick.Scanner(Stick.Color(255, 0, 255), 55);
 }
 
 void loop()

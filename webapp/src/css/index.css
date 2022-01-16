@@ -1,6 +1,6 @@
 html,
 body {
-    background: #dfd9d9;
+    background: #00fcff3d;
 }
 
 .react-colorful {
@@ -17,6 +17,6 @@ body {
 }
 
 .fullscreen.fullscreen-enabled {
-    background-color: #dfd9d9;
+    background-color: #00fcff3d;
     overflow: auto;
 }

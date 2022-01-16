@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import { Card } from './Elements';
+import { Card, SubTitle } from './Elements';
 
 const Debug = () => {
     const [id, setId] = useState<any>(0);
@@ -9,6 +9,7 @@ const Debug = () => {
     }, [id])
     return (
         <Card>
+            <SubTitle>Debug</SubTitle>
             <input type="number" value={id} onChange={(e: any) => setId(e?.target?.value)} />
         </Card>
     )

@@ -7,7 +7,8 @@ import styled from 'styled-components';
 import { FullScreen, useFullScreenHandle } from "react-full-screen";
 import Color from 'color';
 import axios from 'axios';
-import { Card } from './Elements';
+import { Card, SubTitle } from './Elements';
+import useLocalStorage from "use-local-storage";
 
 const SnakeWrapper = styled.div`
     /* display: flex; */
@@ -110,6 +111,39 @@ const SnakeWrapper = styled.div`
 const CheckBox = styled.input.attrs({ type: "checkbox" })`
 `
 
+const SaveButton = styled.button`
+    font-family: "Ubuntu";
+    background: white;
+    border: 1px solid black;
+    padding: 0.5rem 1rem ;
+    width: 100%;
+    margin-top: 1rem;
+`
+const ColorProfile = styled.div`
+    font-family: "Ubuntu";
+
+
+    & .colorProfile {
+        display: flex;
+        justify-content: space-around;
+        padding: 1rem 0;
+        border-bottom: 1px solid black;
+        align-items: center;
+
+        & .name {
+            width: 50%;
+        }
+
+        & button {
+            font-family: "Ubuntu";
+            background: white;
+            border: 1px solid black;
+            padding: 0.5rem 1rem ;
+        }
+    }
+
+`
+
 const SnakeView = () => {
     const [open, setOpen] = useState(false);
     const [data, setData] = useState([
@@ -158,22 +192,33 @@ const SnakeView = () => {
 
 
     const [color, setColor] = useState("#aabbcc");
+    const [colorProfiles, setColorProfiles] = useLocalStorage<string>("colorProfiles", "[]");
 
+    const updateRibbon = (newData: any) => {
+        const colors = newData.map((part: any) => Color(part.color).rgbNumber());
+        axios.post('http://192.168.1.136/setColors', JSON.stringify(colors));
+    }
     useEffect(() => {
         const newData = data.map((part) => part.selected ? { ...part, color } : part)
         setData(newData)
-        const colors = newData.map(part => Color(part.color).rgbNumber());
-        axios.post('http://192.168.1.136/setColors', JSON.stringify(colors));
-
-        console.log("NEW DATA", colors)
-    }, [color])
+        updateRibbon(newData);
+    }, [color, colorProfiles])
 
 
-    console.log("RENDER")
-    const handle = useFullScreenHandle();
+    const saveColorProfile = () => {
+        const profileName = prompt("Nom du profil");
+        setColorProfiles(JSON.stringify([...JSON.parse(colorProfiles), { id: colorProfiles.length + 1, name: profileName, data }]))
+    }
+
+    const removeColorProfile = (id: any) => {
+        setColorProfiles(JSON.stringify([...JSON.parse(colorProfiles).filter((profile: any) => profile.id != id)]))
+    }
+
+
     return (
         <>
             <Card>
+                <SubTitle>Contrôler par parties</SubTitle>
                 <SnakeWrapper>
                     <div className="row">
                         <Part idx={0} className="normal"></Part>
@@ -200,7 +245,26 @@ const SnakeView = () => {
                         <Part idx={12} className="bottomRight"></Part>
                     </div>
                 </SnakeWrapper>
+
                 <HexColorPicker color={color} onChange={setColor} />
+                <SaveButton onClick={saveColorProfile}>Sauvegarder</SaveButton>
+
+                <ColorProfile>
+                    {JSON.parse(colorProfiles).map((profile: any) => {
+                        return <div className="colorProfile">
+                            <div className="name">
+                                {profile.name}
+                            </div>
+                            <button onClick={() => { setData(profile.data); updateRibbon(profile.data); }} className="restore">
+                                Appliquer
+                            </button>
+                            <div onClick={() => removeColorProfile(profile.id)} className="delete">
+                                X
+                            </div>
+                        </div>
+                    })}
+                </ColorProfile>
+
             </Card>
         </>
     )
