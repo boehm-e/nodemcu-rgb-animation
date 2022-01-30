@@ -29,6 +29,16 @@ export const SubTitle = styled.h2`
     
 `
 
+export const Title3 = styled.h3`
+    font-family: "Ubuntu";
+    font-weight: 500;
+    font-size: 1.2rem;
+    margin-top: 0; 
+    padding-top: 0;
+    margin-top: 3rem;
+    
+`
+
 export const AnimationsWrapper = styled.div`
     height: 100%;
     gap: 2rem;

@@ -11,12 +11,16 @@
 #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
 #endif
 
-#define PIN D3
+#define RIBBON_PIN D3
+#define MIC_PIN A0
 
 int NUM_LEDS = 900;
+int NUM_MUSIC_LED = 150;
 
-const char *ssid = "Freebox-ACD532";
-const char *password = "labebantur9#-sardinia*-appie?4-supponatis";
+const char *ssid = "Livebox-D500";
+const char *password = "oZCLksJaMkpDuuh5dK";
+// const char *ssid = "Freebox-ACD532";
+// const char *password = "labebantur9#-sardinia*-appie?4-supponatis";
 ESP8266WebServer server(80);
 
 // Pattern types supported:
@@ -55,13 +59,24 @@ public:
     uint16_t TotalSteps;     // total number of steps in the pattern
     uint16_t Index;          // current step within the pattern
 
-    int MusicIndexes[100] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,};
-    int MusicVolumes[100] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,};
-    int MusicMaxDot = 100;
-
     // GAME
     int GamePos;
     int GameLevel;
+
+    // MUSIC
+    unsigned int sample = 0;
+    const int sampleWindow = 100;
+    const int musicUpdateTime = 30;
+    unsigned long musicUpdateStart;
+
+    unsigned long startMillis;
+    unsigned int peakToPeak;
+    unsigned int signalMax;
+    unsigned int signalMin;
+
+    int r = 152;
+    int g = 0;
+    int b = 10;
 
     void (*OnComplete)(); // Callback on completion of pattern
 
@@ -75,7 +90,7 @@ public:
     // Update the pattern
     void Update()
     {
-        if ((millis() - lastUpdate) > Interval) // time to update
+        if ((millis() - lastUpdate) >= Interval) // time to update
         {
             lastUpdate = millis();
             switch (ActivePattern)
@@ -204,86 +219,137 @@ public:
         Increment();
     }
 
-    // MUSIC
-    int getIndex(int *arr)
+    void resetMusicVariables()
     {
-        for (int i = 0; i < MusicMaxDot; i++)
-        {
-            if (arr[i] < 0)
-                return i;
-        }
-        return -1;
+        startMillis = millis();
+        peakToPeak = 0;
+        signalMax = 0;
+        signalMin = 1024;
     }
 
-    void Music(uint8_t interval, int volume)
+    void Music(uint8_t interval)
     {
         ActivePattern = MUSIC;
-        Interval = interval;
-        int idx = getIndex(MusicIndexes);
-        // reset
-        if (idx > MusicMaxDot || idx < 0)
-        {
-            idx = 0;
-            for (int i = 0; i < MusicMaxDot; i++)
-            {
-                MusicIndexes[i] = -1;
-                MusicVolumes[i] = -1;
-            }
-        }
-        MusicIndexes[idx] = 0;
-        MusicVolumes[idx] = volume;
+        Interval = 0;
+        resetMusicVariables();
+        musicUpdateStart = millis();
     }
 
-    void IncrementMusic()
+    void MusicAddColor(int volume)
     {
-        for (int i = 0; i < MusicMaxDot; i++)
+        volume = volume * 50;
+        if ((volume >= 450) && (volume <= 550))
         {
-            if (MusicIndexes[i] >= 0)
-            {
-                MusicIndexes[i] = MusicIndexes[i] + (int)(MusicVolumes[i] / 2);
-            }
+            setPixelColor((NUM_LEDS / 2) - 1, Color(0, 0, 255));
+            setPixelColor(NUM_LEDS / 2, Color(0, 0, 255));
         }
-    }
-    // // Update the Decay Pattern
+        else if ((volume >= 400) && (volume <= 450))
+        {
+            setPixelColor((NUM_LEDS / 2) - 1, Color(153, 153, 0));
+            setPixelColor(NUM_LEDS / 2, Color(153, 153, 0));
+        }
+        else if ((volume >= 350) && (volume <= 400))
+        {
+            setPixelColor((NUM_LEDS / 2) - 1, Color(255, 50, 255));
+            setPixelColor(NUM_LEDS / 2, Color(255, 50, 255));
+        }
+        else if ((volume >= 300) && (volume <= 350))
+        {
+            setPixelColor((NUM_LEDS / 2) - 1, Color(10, 25, 217));
+            setPixelColor(NUM_LEDS / 2, Color(10, 25, 217));
+        }
+
+        else if ((volume >= 276) && (volume <= 300))
+        {
+            setPixelColor((NUM_LEDS / 2) - 1, Color(50, 50, 150));
+            setPixelColor(NUM_LEDS / 2, Color(50, 50, 150));
+        }
+        else if ((volume >= 250) && (volume <= 275))
+        {
+            setPixelColor((NUM_LEDS / 2) - 1, Color(230, 0, 10));
+            setPixelColor(NUM_LEDS / 2, Color(230, 0, 10));
+        }
+        else if ((volume >= 235) && (volume <= 250))
+        {
+            setPixelColor((NUM_LEDS / 2) - 1, Color(0, 160, 0));
+            setPixelColor(NUM_LEDS / 2, Color(0, 160, 0));
+        }
+        else if ((volume >= 200) && (volume <= 230))
+        {
+            setPixelColor((NUM_LEDS / 2) - 1, Color(1, 0, 1));
+            setPixelColor(NUM_LEDS / 2, Color(1, 0, 1));
+        }
+        else
+        {
+            setPixelColor(((NUM_LEDS / 2) - 1), Color(r, volume - 100, b));
+            setPixelColor((NUM_LEDS / 2), Color(r, volume - 100, b));
+        }
+
+    } // // Update the Decay Pattern
+
+    int MAX_VOLUME = 550;
     void MusicUpdate()
     {
 
-        for (int i = 0; i < MusicMaxDot; i++)
+        if (millis() - startMillis < sampleWindow)
         {
-            if (MusicIndexes[i] >= 0)
+            // Serial.println("COLLECTING SAMPLES");
+            sample = analogRead(MIC_PIN);
+            // Serial.print("SAMPLE : "); Serial.println(sample);
+            if (sample < 1024)
             {
-                for (int j = 0; j < MusicVolumes[i]*2; j++)
+                if (sample > signalMax)
                 {
-                    if (MusicVolumes[i] == 1)
-                        setPixelColor(MusicIndexes[i] - j, DimColorShift(0xff1500, 9));
-                    else if (MusicVolumes[i] == 2)
-                        setPixelColor(MusicIndexes[i] - j, DimColorShift(0xffeb00, 8));
-                    else if (MusicVolumes[i] == 3)
-                        setPixelColor(MusicIndexes[i] - j, DimColorShift(0x85ff00, 7));
-                    else if (MusicVolumes[i] == 4)
-                        setPixelColor(MusicIndexes[i] - j, DimColorShift(0x00ffa1, 6));
-                    else if (MusicVolumes[i] == 5)
-                        setPixelColor(MusicIndexes[i] - j, DimColorShift(0x00ffe9, 5));
-                    else if (MusicVolumes[i] == 6)
-                        setPixelColor(MusicIndexes[i] - j, DimColorShift(0x0080ff, 4));
-                    else if (MusicVolumes[i] == 7)
-                        setPixelColor(MusicIndexes[i] - j, DimColorShift(0x0012ff, 3));
-                    else if (MusicVolumes[i] == 8)
-                        setPixelColor(MusicIndexes[i] - j, DimColorShift(0x9d00ff, 2));
-                    else if (MusicVolumes[i] == 9)
-                        setPixelColor(MusicIndexes[i] - j, DimColorShift(0xff00b6, 1));
-                    else if (MusicVolumes[i] >= 10)
-                        setPixelColor(MusicIndexes[i] - j, 0xffffff);
+                    signalMax = sample;
+                }
+                if (sample < signalMin)
+                {
+                    signalMin = sample;
                 }
             }
         }
-
-        for (int i = 0; i < NUM_LEDS; i++)
+        else
         {
-            setPixelColor(i, DimColorShift(getPixelColor(i), 1));
+            resetMusicVariables();
         }
-        IncrementMusic();
+
+        if (millis() - musicUpdateStart < musicUpdateTime)
+        {
+            Serial.print("if   : ");Serial.println(millis() - musicUpdateStart);
+            peakToPeak = signalMax - signalMin;
+            double volume = (peakToPeak * MAX_VOLUME) / 1024;
+            MusicAddColor(volume);
+            // Serial.print("volume  : ");
+            // Serial.println(volume);
+
+            for (int i = 0; i <= ((NUM_LEDS / 2) - 2); i++)
+            {
+                if (i >= (NUM_LEDS / 2 - NUM_MUSIC_LED / 2) && i <= (NUM_LEDS / 2 + NUM_MUSIC_LED / 2))
+                {
+                    setPixelColor(i, getPixelColor(i + 1));
+                    setPixelColor(NUM_LEDS - 1 - i, getPixelColor((NUM_LEDS)-i - 2));
+                }
+                else
+                {
+                    setPixelColor(i, 0x000000);
+                }
+            }
+        }
+        else
+        {
+            musicUpdateStart = millis();
+            Serial.print("else : ");Serial.println(millis() - musicUpdateStart);
+        }
+        // if (Index % 1000 == 0)
+        // {
+        //     for (int i = 0; i < NUM_LEDS; i++)
+        //     {
+        //         setPixelColor(i, DimColorShift(getPixelColor(i), 1));
+        //     }
+        // }
+
         show();
+        // Increment();
     }
 
     // Update the Rainbow Cycle Pattern
@@ -540,7 +606,7 @@ public:
 
 void StickComplete();
 
-NeoPatterns Stick(NUM_LEDS, D3, NEO_GRB + NEO_KHZ800, &StickComplete);
+NeoPatterns Stick(NUM_LEDS, RIBBON_PIN, NEO_GRB + NEO_KHZ800, &StickComplete);
 
 void sendCrossOriginHeader()
 {
@@ -578,14 +644,27 @@ void setMusic()
         if (server.method() == HTTP_POST)
         {
 
-            if (postObj.containsKey("volume"))
+            int speed = 100;
+            if (postObj.containsKey("width"))
             {
-
-                Serial.println(F("done."));
-                int volume = postObj["volume"];
-                Serial.print("MUSIQUE : "); Serial.println(volume);
-                Stick.Music(20, volume);
+                int width = postObj["width"];
+                if (width != NUM_MUSIC_LED)
+                {
+                    Stick.ColorSet(0x000000);
+                }
+                NUM_MUSIC_LED = postObj["width"];
+                Serial.print("SET WIDTH ");
+                Serial.println(NUM_MUSIC_LED);
             }
+
+            if (postObj.containsKey("speed"))
+            {
+                speed = postObj["speed"];
+                Serial.print("SET speed ");
+                Serial.println(speed);
+            }
+
+            Stick.Music(speed);
 
             DynamicJsonDocument response(512);
             response["status"] = "OK";
@@ -857,9 +936,18 @@ void handleNotFound()
     }
 }
 
+int readMicrophone()
+{ /* function readMicrophone */
+    ////Test routine for Microphone
+    int value = analogRead(MIC_PIN);
+    return value;
+}
+
 void setup()
 {
     Serial.begin(115200);
+
+    pinMode(MIC_PIN, INPUT);
 
 // server
 #if defined(__AVR_ATtiny85__) && (F_CPU == 16000000)
@@ -888,7 +976,7 @@ void setup()
 
     // stick
     Stick.begin();
-    // Stick.Scanner(Stick.Color(255, 0, 255), 55);
+    Stick.Music(100);
 }
 
 void loop()
